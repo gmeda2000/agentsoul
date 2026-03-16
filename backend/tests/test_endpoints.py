@@ -204,3 +204,53 @@ async def test_evolution_endpoint():
     assert "current_reputation" in data
     assert "total_interactions" in data
     assert isinstance(data["snapshots"], list)
+
+
+# --- Experiment endpoints ---
+
+@pytest.mark.asyncio
+async def test_experiment_stats():
+    async with await get_client() as client:
+        # Create some agents to have data
+        b1 = await client.post("/agent/birth")
+        b2 = await client.post("/agent/birth")
+        a1 = b1.json()["agent_id"]
+        a2 = b2.json()["agent_id"]
+        # Add a citation
+        await client.post("/agent/cite", json={"citing_agent_id": a1, "cited_agent_id": a2})
+        r = await client.get("/experiment/stats")
+    assert r.status_code == 200
+    data = r.json()
+    assert "cooperation" in data
+    assert "personality" in data
+    assert "reputation" in data
+    assert "hypotheses" in data
+    assert "cooperation_rate" in data["cooperation"]
+    assert "personality_diversity_index" in data["personality"]
+    assert "reputation_gini_coefficient" in data["reputation"]
+    # All hypotheses should start as TESTING
+    for h_status in data["hypotheses"].values():
+        assert h_status == "TESTING"
+
+
+@pytest.mark.asyncio
+async def test_experiment_evolution_chart():
+    async with await get_client() as client:
+        r = await client.get("/experiment/evolution_chart")
+    assert r.status_code == 200
+    data = r.json()
+    assert "series" in data
+    assert "personality_diversity_index" in data["series"]
+    assert "cooperation_rate" in data["series"]
+    assert "top_agent_dominant_trait" in data["series"]
+
+
+@pytest.mark.asyncio
+async def test_hypothesis_status_update():
+    async with await get_client() as client:
+        r = await client.post(
+            "/experiment/hypothesis/cooperation_emerges/status",
+            params={"status": "CONFIRMED"}
+        )
+    assert r.status_code == 200
+    assert r.json()["new_status"] == "CONFIRMED"

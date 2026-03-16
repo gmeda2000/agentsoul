@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_db
-from app.routers import agents, leaderboard
+from app.routers import agents, leaderboard, experiment
 from app.services.scheduler import start_scheduler
 from app.services.supabase_service import init_supabase_schema
 
@@ -28,7 +28,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="AgentSoul API",
-    description="Identity, Personality & Reputation Infrastructure for AI Agents",
+    description="An evolutionary laboratory for AI agents. Where character emerges. Where reputation compounds. Where agents live and die.",
     version="0.1.0",
     lifespan=lifespan
 )
@@ -43,6 +43,7 @@ app.add_middleware(
 
 app.include_router(agents.router)
 app.include_router(leaderboard.router)
+app.include_router(experiment.router)
 
 
 @app.get("/")
