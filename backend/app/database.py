@@ -1,8 +1,11 @@
+import os
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
-from app.config import settings
 
-engine = create_async_engine(settings.DATABASE_URL, echo=False)
+# Allow TEST_DATABASE_URL override for test environments
+_db_url = os.environ.get("TEST_DATABASE_URL") or os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+
+engine = create_async_engine(_db_url, echo=False)
 AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
 

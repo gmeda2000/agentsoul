@@ -2,7 +2,6 @@ import hashlib
 import logging
 from datetime import datetime
 from typing import Optional
-from uuid import UUID
 import anthropic
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -78,7 +77,7 @@ async def birth_agent(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/{agent_id}/identity", response_model=AgentIdentity)
-async def get_agent_identity(agent_id: UUID, db: AsyncSession = Depends(get_db)):
+async def get_agent_identity(agent_id: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Agent).where(Agent.agent_id == agent_id))
     agent = result.scalar_one_or_none()
     if not agent:
@@ -95,7 +94,7 @@ async def get_agent_identity(agent_id: UUID, db: AsyncSession = Depends(get_db))
 
 
 @router.post("/{agent_id}/interact", response_model=InteractResponse)
-async def interact(agent_id: UUID, req: InteractRequest, db: AsyncSession = Depends(get_db)):
+async def interact(agent_id: str, req: InteractRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Agent).where(Agent.agent_id == agent_id))
     agent = result.scalar_one_or_none()
     if not agent:
@@ -140,7 +139,7 @@ async def interact(agent_id: UUID, req: InteractRequest, db: AsyncSession = Depe
 
     # Save interaction to DB
     interaction = Interaction(
-        agent_id=agent_id,
+        agent_id=str(agent_id),
         user_message=req.user_message,
         agent_response=agent_response,
         response_quality_score=quality,
@@ -162,7 +161,7 @@ async def interact(agent_id: UUID, req: InteractRequest, db: AsyncSession = Depe
     if evolution:
         # Save evolution snapshot
         snapshot = EvolutionSnapshot(
-            agent_id=agent_id,
+            agent_id=str(agent_id),
             behavioral_drift=evolution["adjustments"],
             behavioral_summary=evolution["behavioral_summary"],
             interaction_count_at_snapshot=agent.interaction_count
@@ -210,7 +209,7 @@ async def cite_agent(req: CitationRequest, db: AsyncSession = Depends(get_db)):
 
 
 @router.delete("/{agent_id}/death")
-async def kill_agent(agent_id: UUID, db: AsyncSession = Depends(get_db)):
+async def kill_agent(agent_id: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Agent).where(Agent.agent_id == agent_id))
     agent = result.scalar_one_or_none()
     if not agent:
@@ -248,7 +247,7 @@ async def kill_agent(agent_id: UUID, db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/{agent_id}/evolution", response_model=EvolutionResponse)
-async def get_evolution(agent_id: UUID, db: AsyncSession = Depends(get_db)):
+async def get_evolution(agent_id: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Agent).where(Agent.agent_id == agent_id))
     agent = result.scalar_one_or_none()
     if not agent:
