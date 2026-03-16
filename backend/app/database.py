@@ -4,6 +4,11 @@ from sqlalchemy.orm import DeclarativeBase
 
 # Allow TEST_DATABASE_URL override for test environments
 _db_url = os.environ.get("TEST_DATABASE_URL") or os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
+# Railway provides postgresql:// but asyncpg requires postgresql+asyncpg://
+if _db_url.startswith("postgresql://"):
+    _db_url = _db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
+elif _db_url.startswith("postgres://"):
+    _db_url = _db_url.replace("postgres://", "postgresql+asyncpg://", 1)
 
 engine = create_async_engine(_db_url, echo=False)
 AsyncSessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
