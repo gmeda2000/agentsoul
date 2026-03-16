@@ -5,7 +5,7 @@ from typing import List
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from sqlalchemy import select, update
 from app.database import AsyncSessionLocal
-from app.models import Agent, Interaction
+from app.models import Agent, Interaction, CollaborationEvent
 
 logger = logging.getLogger(__name__)
 scheduler = AsyncIOScheduler()
@@ -33,23 +33,23 @@ DEMO_QUESTIONS = [
 async def select_agent_for_task(agents: List[Agent]) -> Agent:
     """
     Selection algorithm:
-    40% reputation_score
-    30% interaction_success_rate (approximated by reputation / max_interaction)
-    20% response_time_ms (random simulation)
+    50% lifetime_fitness_score
+    25% interaction_success_rate (approximated by interaction_count / max)
+    15% response_time_ms (random simulation)
     10% random
     """
     if not agents:
         return None
 
-    max_rep = max(a.reputation_score for a in agents) or 1.0
+    max_fitness = max(a.lifetime_fitness_score for a in agents) or 1.0
     max_count = max(a.interaction_count for a in agents) or 1
 
     scores = []
     for agent in agents:
-        rep_score = (agent.reputation_score / max_rep) * 0.4
-        success_rate = (agent.interaction_count / max_count) * 0.3
-        speed_score = random.random() * 0.2
-        random_score = random.random() * 0.1
+        rep_score = (agent.lifetime_fitness_score / max_fitness) * 0.50
+        success_rate = (agent.interaction_count / max_count) * 0.25
+        speed_score = random.random() * 0.15
+        random_score = random.random() * 0.10
         total = rep_score + success_rate + speed_score + random_score
         scores.append((agent, total))
 
@@ -136,6 +136,33 @@ async def run_simulation_tick():
 
                 except Exception as e:
                     logger.error(f"Simulation interaction failed: {e}")
+                    await db.rollback()
+
+            # 2 collaborative tasks per tick: agent A calls agent B
+            for _ in range(2):
+                if len(agents) < 2:
+                    break
+                initiator = await select_agent_for_task(agents)
+                responders = [a for a in agents if a.agent_id != initiator.agent_id]
+                if not responders:
+                    break
+                responder = random.choice(responders)
+                try:
+                    collab = CollaborationEvent(
+                        initiating_agent_id=initiator.agent_id,
+                        responding_agent_id=responder.agent_id,
+                        collaboration_token_ratio=round(random.uniform(0.3, 1.5), 3),
+                        task_completed=1,
+                        steps_to_completion=random.randint(1, 5),
+                        redundant_calls=random.randint(0, 2),
+                        context_questions_asked=random.randint(0, 3),
+                        outcome_score=round(random.uniform(0.5, 1.0), 3),
+                    )
+                    db.add(collab)
+                    await db.commit()
+                    logger.info(f"Collaboration: {initiator.agent_id} -> {responder.agent_id}")
+                except Exception as e:
+                    logger.error(f"Collaboration event failed: {e}")
                     await db.rollback()
 
     except Exception as e:

@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_db
-from app.routers import agents, leaderboard, experiment
+from app.routers import agents, leaderboard, experiment, fitness, community, leaderboard_awards, feedback
 from app.services.scheduler import start_scheduler
 from app.services.supabase_service import init_supabase_schema
 
@@ -44,6 +44,10 @@ app.add_middleware(
 app.include_router(agents.router)
 app.include_router(leaderboard.router)
 app.include_router(experiment.router)
+app.include_router(fitness.router)
+app.include_router(community.router)
+app.include_router(leaderboard_awards.router)
+app.include_router(feedback.router)
 
 
 @app.get("/")

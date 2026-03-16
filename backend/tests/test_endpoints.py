@@ -254,3 +254,85 @@ async def test_hypothesis_status_update():
         )
     assert r.status_code == 200
     assert r.json()["new_status"] == "CONFIRMED"
+
+
+@pytest.mark.asyncio
+async def test_agent_fitness_endpoint():
+    async with await get_client() as client:
+        birth = await client.post("/agent/birth")
+        agent_id = birth.json()["agent_id"]
+        r = await client.get(f"/agent/{agent_id}/fitness")
+    assert r.status_code == 200
+    data = r.json()
+    assert "lifetime_fitness_score" in data
+    assert "fitness_trend" in data
+    assert "evolution_source_counts" in data
+    assert "evolution_history" in data
+
+
+@pytest.mark.asyncio
+async def test_experiment_emergence():
+    async with await get_client() as client:
+        await client.post("/agent/birth")
+        r = await client.get("/experiment/emergence")
+    assert r.status_code == 200
+    data = r.json()
+    assert "emerging_patterns" in data
+    assert "convergence_status" in data
+    assert "hypothesis_status" in data
+    assert isinstance(data["emerging_patterns"], list)
+
+
+@pytest.mark.asyncio
+async def test_community_register_agent():
+    async with await get_client() as client:
+        birth = await client.post("/agent/birth")
+        agent_id = birth.json()["agent_id"]
+        r = await client.post("/community/register-agent", json={"agent_id": agent_id, "owner_handle": "test_user"})
+    assert r.status_code == 200
+    data = r.json()
+    assert "participant_token" in data
+    assert "profile_url" in data
+    assert "instructions" in data
+
+
+@pytest.mark.asyncio
+async def test_community_my_agent():
+    async with await get_client() as client:
+        birth = await client.post("/agent/birth")
+        agent_id = birth.json()["agent_id"]
+        reg = await client.post("/community/register-agent", json={"agent_id": agent_id})
+        token = reg.json()["participant_token"]
+        r = await client.get(f"/community/my-agent/{token}")
+    assert r.status_code == 200
+    data = r.json()
+    assert "rank" in data
+    assert "lifetime_fitness_score" in data
+    assert "population_comparison" in data
+
+
+@pytest.mark.asyncio
+async def test_full_leaderboard():
+    async with await get_client() as client:
+        for _ in range(3):
+            await client.post("/agent/birth")
+        r = await client.get("/leaderboard/full")
+    assert r.status_code == 200
+    data = r.json()
+    assert "leaderboard" in data
+
+
+@pytest.mark.asyncio
+async def test_hall_of_fame():
+    async with await get_client() as client:
+        r = await client.get("/leaderboard/hall-of-fame")
+    assert r.status_code == 200
+    assert "hall_of_fame" in r.json()
+
+
+@pytest.mark.asyncio
+async def test_awards_endpoint():
+    async with await get_client() as client:
+        r = await client.get("/leaderboard/awards")
+    assert r.status_code == 200
+    assert "awards" in r.json()

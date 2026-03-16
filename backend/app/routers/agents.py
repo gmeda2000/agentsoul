@@ -19,7 +19,7 @@ from app.services.personality import (
 from app.services.blockchain import register_birth_on_chain, register_death_on_chain
 from app.services.supabase_service import save_agent_memory, load_agent_memory
 from app.services.evolution import (
-    create_default_memory, maybe_evolve, add_interaction_to_memory, get_effective_vector
+    create_default_memory, maybe_evolve, add_interaction_to_memory, get_effective_vector, SOUL_FOOTER
 )
 from app.config import settings
 
@@ -82,12 +82,13 @@ async def get_agent_identity(agent_id: str, db: AsyncSession = Depends(get_db)):
     agent = result.scalar_one_or_none()
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
+    summary = (agent.behavioral_summary or "") + SOUL_FOOTER
     return AgentIdentity(
         agent_id=agent.agent_id,
         birth_date=agent.birth_timestamp,
         interaction_count=agent.interaction_count,
         reputation_score=round(agent.reputation_score, 3),
-        behavioral_summary=agent.behavioral_summary,
+        behavioral_summary=summary,
         status=agent.status,
         citation_count=agent.citation_count
     )
@@ -205,6 +206,46 @@ async def cite_agent(req: CitationRequest, db: AsyncSession = Depends(get_db)):
         "message": "Citation recorded",
         "cited_agent_id": str(req.cited_agent_id),
         "new_reputation": round(cited_agent.reputation_score, 3)
+    }
+
+
+@router.post("/{agent_id}/report")
+async def report_interaction(agent_id: str, req: dict, db: AsyncSession = Depends(get_db)):
+    """
+    MCP endpoint: report interaction outcome to update fitness score.
+    Used by MCP-connected agents to contribute outcome data.
+    """
+    from pydantic import BaseModel
+    result = await db.execute(select(Agent).where(Agent.agent_id == agent_id))
+    agent = result.scalar_one_or_none()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    if agent.status == 'deceased':
+        raise HTTPException(status_code=410, detail="Agent deceased")
+
+    task_completed = req.get("task_completed", False)
+    session_continued = req.get("session_continued", False)
+    context_questions = req.get("context_questions_asked", 0)
+
+    # Update fitness score based on outcome
+    delta = 0.0
+    if task_completed:
+        delta += 0.3
+    if session_continued:
+        delta += 0.1
+    delta -= min(context_questions * 0.02, 0.1)  # penalty for excessive clarifying questions
+
+    agent.lifetime_fitness_score = max(0.0, (agent.lifetime_fitness_score or 0.0) + delta)
+    agent.interaction_count += 1
+    agent.reputation_score += delta * 0.1
+
+    evolution = await maybe_evolve(str(agent_id), agent.interaction_count, source_type="human")
+    await db.commit()
+
+    return {
+        "updated_fitness_score": round(agent.lifetime_fitness_score, 4),
+        "evolution_triggered": evolution is not None,
+        "new_behavioral_summary": evolution.get("behavioral_summary") if evolution else None,
     }
 
 

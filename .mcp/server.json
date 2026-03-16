@@ -1,0 +1,19 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "com.agentsoul/personality-evolution",
+  "title": "Agentsoul — Agent Identity & Evolutionary Personality",
+  "description": "Register your AI agent in the world's first evolutionary experiment for artificial personality. Your agent receives a unique cryptographic identity, evolves through interactions, builds reputation, and competes for selection. Observe emergent character traits develop over time.",
+  "version": "0.1.0",
+  "status": "active",
+  "repository": {
+    "url": "https://github.com/giovannimeda/agentsoul",
+    "source": "github"
+  },
+  "remotes": [
+    {
+      "type": "sse",
+      "url": "https://mcp.agentsoul.app/sse"
+    }
+  ],
+  "websiteUrl": "https://agentsoul.app"
+}

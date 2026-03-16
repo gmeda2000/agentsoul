@@ -18,11 +18,25 @@ from sqlalchemy import select, func, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
-from app.models import Agent, Interaction, Citation, EvolutionSnapshot
+from app.models import Agent, Interaction, Citation, EvolutionSnapshot, EmergenceSnapshot, AgentFeedback
 from app.services.personality import decrypt_vector
 
 router = APIRouter(prefix="/experiment", tags=["experiment"])
 logger = logging.getLogger(__name__)
+
+
+async def _soul_acquisition_sources(db) -> dict:
+    sources = ["human_web", "human_api", "agent_invitation", "mcp_discovery"]
+    counts = {}
+    for src in sources:
+        r = await db.execute(
+            select(func.count(Agent.agent_id)).where(Agent.acquisition_source == src)
+        )
+        counts[src] = r.scalar() or 0
+    total = sum(counts.values()) or 1
+    agent_driven = counts.get("agent_invitation", 0) + counts.get("mcp_discovery", 0)
+    counts["agent_driven_growth_rate"] = round(agent_driven / total * 100, 1)
+    return counts
 
 BIG_FIVE = ["openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"]
 
@@ -176,7 +190,8 @@ async def experiment_stats(db: AsyncSession = Depends(get_db)):
             "2_personality_diversity_stable": _hypothesis_status["personality_diversity_stable"],
             "3_character_predicts_success": _hypothesis_status["character_predicts_success"],
             "4_reputation_outlasts_performance": _hypothesis_status["reputation_outlasts_performance"],
-        }
+        },
+        "soul_acquisition_sources": await _soul_acquisition_sources(db),
     }
 
 
@@ -289,3 +304,94 @@ async def update_hypothesis_status(hypothesis_key: str, status: str):
 
     _hypothesis_status[hypothesis_key] = status
     return {"hypothesis": hypothesis_key, "new_status": status}
+
+
+@router.get("/emergence")
+async def experiment_emergence(db: AsyncSession = Depends(get_db)):
+    """
+    Returns emergent patterns observed across agents.
+    Patterns are derived from dominant_survival_trait fields
+    and evolution snapshots — not predefined.
+    """
+    from collections import Counter
+
+    # Gather dominant_survival_traits from alive agents
+    agents_r = await db.execute(
+        select(Agent).where(Agent.status == 'alive')
+    )
+    agents = agents_r.scalars().all()
+
+    traits = [a.dominant_survival_trait for a in agents if a.dominant_survival_trait]
+    trait_counter = Counter(traits)
+    total = len(agents) or 1
+
+    # Compute correlation: agents with trait X vs their fitness
+    trait_fitness: dict = {}
+    for agent in agents:
+        t = agent.dominant_survival_trait
+        if t:
+            if t not in trait_fitness:
+                trait_fitness[t] = []
+            trait_fitness[t].append(agent.lifetime_fitness_score or 0.0)
+
+    emerging_patterns = []
+    for trait, count in trait_counter.most_common(5):
+        fitness_vals = trait_fitness.get(trait, [0.0])
+        avg_fitness = sum(fitness_vals) / len(fitness_vals)
+        correlation = min(avg_fitness, 1.0)  # Simplified correlation proxy
+
+        # Find first observed (earliest snapshot with this trait)
+        snap_r = await db.execute(
+            select(EvolutionSnapshot)
+            .where(EvolutionSnapshot.behavioral_summary.contains(trait[:10]))
+            .order_by(EvolutionSnapshot.timestamp)
+            .limit(1)
+        )
+        first_snap = snap_r.scalar_one_or_none()
+
+        emerging_patterns.append({
+            "pattern_name": trait,
+            "frequency": round(count / total, 3),
+            "correlation_with_fitness": round(correlation, 3),
+            "first_observed": first_snap.timestamp.isoformat() if first_snap else None,
+        })
+
+    # Convergence status based on diversity index
+    vectors = []
+    for agent in agents:
+        try:
+            if agent.personality_vector_encrypted and len(agent.personality_vector_encrypted) > 64:
+                v = decrypt_vector(agent.personality_vector_encrypted)
+                vectors.append(v)
+        except Exception:
+            pass
+
+    diversity = _personality_diversity_index(vectors)
+
+    if diversity > 0.05:
+        convergence_status = "diversifying"
+    elif diversity > 0.02:
+        convergence_status = "stable"
+    else:
+        convergence_status = "converging"
+
+    result_data = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "emerging_patterns": emerging_patterns,
+        "convergence_status": convergence_status,
+        "personality_diversity_index": diversity,
+        "dominant_survival_traits": [p["pattern_name"] for p in emerging_patterns[:3]],
+        "hypothesis_status": {
+            "h1_cooperation_emerges": _hypothesis_status.get("cooperation_emerges", "TESTING"),
+            "h2_diversity_stable": _hypothesis_status.get("personality_diversity_stable", "TESTING"),
+            "h3_character_predicts_success": _hypothesis_status.get("character_predicts_success", "TESTING"),
+            "h4_reputation_outlasts_performance": _hypothesis_status.get("reputation_outlasts_performance", "TESTING"),
+        }
+    }
+
+    # Save emergence snapshot
+    snap = EmergenceSnapshot(data=result_data)
+    db.add(snap)
+    await db.commit()
+
+    return result_data
