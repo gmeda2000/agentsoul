@@ -1,37 +1,141 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Gloock&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500&display=swap');
 
+/* ─── EVOLUTIONARY NOTATION — Design System v1.0 ────────────────────────────── */
 :root {
-  --background: #09090b;
-  --foreground: #fafafa;
+  --cream:          #EDE8DF;
+  --cream-light:    #F5F0E8;
+  --cream-dark:     #D8D0C4;
+  --ink:            #3A2E24;
+  --ink-light:      #5A4A3A;
+  --ink-faint:      #8A7A68;
+  --ink-ghost:      #C4B8A8;
+  --amber:          #BA7517;
+  --amber-light:    #E9A925;
+  --amber-pale:     #FEF0D0;
+  --amber-faint:    #FEF8EC;
+
+  --font-display:   'Gloock', Georgia, serif;
+  --font-body:      'Crimson Pro', Georgia, serif;
+  --font-mono:      'IBM Plex Mono', monospace;
+  --font-ui:        'Instrument Sans', Arial, sans-serif;
 }
 
-* {
-  box-sizing: border-box;
-}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 16px; -webkit-font-smoothing: antialiased; }
 
 body {
-  background: #09090b;
-  color: #fafafa;
-  font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Consolas, monospace;
-  -webkit-font-smoothing: antialiased;
+  background-color: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 15px;
+  line-height: 1.7;
+  min-height: 100vh;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+/* Dot grain texture — the paper surface */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.08;
+  background-image: radial-gradient(circle, var(--ink-faint) 0.6px, transparent 0.6px);
+  background-size: 5px 5px;
 }
 
-::selection {
-  background: #f59e0b;
-  color: #000;
+a { color: inherit; text-decoration: none; }
+a:hover { text-decoration: underline; text-decoration-color: var(--ink-ghost); }
+
+::selection { background: var(--amber-pale); color: var(--ink); }
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-track { background: var(--cream); }
+::-webkit-scrollbar-thumb { background: var(--ink-ghost); }
+
+/* ─── TAILWIND OVERRIDES — map zinc/amber classes to new palette ────────────── */
+
+/* Backgrounds */
+.bg-zinc-950, .bg-zinc-900 { background-color: var(--cream) !important; }
+.bg-zinc-800 { background-color: var(--cream-dark) !important; }
+
+/* Text */
+.text-zinc-100, .text-white { color: var(--ink) !important; }
+.text-zinc-200, .text-zinc-300 { color: var(--ink-light) !important; }
+.text-zinc-400, .text-zinc-500 { color: var(--ink-faint) !important; }
+.text-zinc-600, .text-zinc-700 { color: var(--ink-ghost) !important; }
+
+/* Amber — preserved as soul accent */
+.text-amber-400 { color: var(--amber) !important; }
+.bg-amber-400   { background-color: var(--amber) !important; }
+.border-amber-400 { border-color: var(--amber) !important; }
+.hover\:bg-amber-400:hover { background-color: var(--amber) !important; }
+.hover\:text-black:hover { color: var(--cream) !important; }
+
+/* Borders */
+.border-zinc-800 { border-color: var(--ink-ghost) !important; }
+.border-zinc-700 { border-color: var(--ink-faint) !important; }
+.border-zinc-600 { border-color: var(--ink-faint) !important; }
+.border-red-800  { border-color: #9B1C1C !important; }
+.bg-red-950\/20  { background-color: rgba(254,226,226,0.3) !important; }
+.text-red-400    { color: #DC2626 !important; }
+
+/* Green for confirmed status */
+.text-green-400  { color: #16A34A !important; }
+.border-green-600{ border-color: #16A34A !important; }
+
+/* Hover states */
+.hover\:text-zinc-100:hover { color: var(--ink) !important; }
+.hover\:text-zinc-200:hover { color: var(--ink-light) !important; }
+.hover\:border-zinc-500:hover { border-color: var(--ink-faint) !important; }
+
+/* ─── TYPOGRAPHY COMPONENTS ────────────────────────────────────────────────── */
+
+/* Display headings — Gloock */
+h1 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  line-height: 1.15;
+}
+h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  color: var(--ink);
 }
 
-::-webkit-scrollbar {
-  width: 4px;
+/* Mono data */
+.font-mono, code, pre {
+  font-family: var(--font-mono) !important;
 }
-::-webkit-scrollbar-track {
-  background: #09090b;
+
+/* ─── CARD STYLE — specimen field notebook ──────────────────────────────────── */
+/* All bordered panels get the cream-light background */
+.border.border-zinc-800,
+.border.border-zinc-700 {
+  background-color: var(--cream-light) !important;
+  border-color: var(--ink-ghost) !important;
+  border-radius: 2px !important;
 }
-::-webkit-scrollbar-thumb {
-  background: #27272a;
+
+/* ─── SOUL BADGE (amber border — only soul elements) ────────────────────────── */
+.soul-badge {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--amber);
+  border: 0.5px solid var(--amber);
+  padding: 2px 6px;
+  letter-spacing: 0.1em;
+  border-radius: 1px;
+}
+
+/* ─── AMBER RULE ────────────────────────────────────────────────────────────── */
+.amber-rule {
+  display: block;
+  height: 1px;
+  background: var(--amber);
+  border: none;
 }

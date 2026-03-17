@@ -14,13 +14,12 @@ export const metadata: Metadata = {
 };
 
 const NAV = [
-  { href: "/", label: "Home" },
   { href: "/experiment", label: "Experiment" },
   { href: "/leaderboard", label: "Leaderboard" },
   { href: "/demo", label: "Demo" },
   { href: "/manifesto", label: "Manifesto" },
+  { href: "/protocol/asp-1", label: "ASP-1" },
   { href: "/join", label: "Join" },
-  { href: "/docs", label: "Docs" },
 ];
 
 export default function RootLayout({
@@ -29,20 +28,52 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="bg-zinc-950">
-      <body className="min-h-screen bg-zinc-950 text-zinc-100">
-        <header className="border-b border-zinc-800 px-6 py-4">
-          <div className="max-w-5xl mx-auto flex items-center justify-between">
-            <Link href="/" className="font-bold text-sm tracking-tight">
-              <span className="text-amber-400">AGENT</span>
-              <span className="text-zinc-100">SOUL</span>
+    <html lang="en">
+      <body style={{ minHeight: '100vh', backgroundColor: 'var(--cream)' }}>
+        {/* Navigation — minimal, scientific journal index */}
+        <header style={{
+          borderBottom: '0.5px solid var(--ink-ghost)',
+          padding: '16px 40px',
+          backgroundColor: 'var(--cream)',
+          position: 'sticky',
+          top: 0,
+          zIndex: 50,
+        }}>
+          <div style={{
+            maxWidth: '1200px',
+            margin: '0 auto',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            {/* Brand */}
+            <Link href="/" style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '1rem',
+              letterSpacing: '0.08em',
+              color: 'var(--ink)',
+              textDecoration: 'none',
+              display: 'flex',
+              alignItems: 'baseline',
+              gap: '2px',
+            }}>
+              AGENTSOUL
             </Link>
-            <nav className="flex items-center gap-5 text-xs text-zinc-400">
+
+            {/* Nav links */}
+            <nav style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
               {NAV.map(({ href, label }) => (
                 <Link
                   key={href}
                   href={href}
-                  className="hover:text-zinc-100 transition-colors"
+                  style={{
+                    fontFamily: 'var(--font-ui)',
+                    fontSize: '0.7rem',
+                    letterSpacing: '0.15em',
+                    textTransform: 'uppercase',
+                    color: 'var(--ink-faint)',
+                    textDecoration: 'none',
+                  }}
                 >
                   {label}
                 </Link>
@@ -50,16 +81,68 @@ export default function RootLayout({
             </nav>
           </div>
         </header>
-        <main className="max-w-5xl mx-auto">
+
+        {/* Main content */}
+        <main style={{ maxWidth: '1200px', margin: '0 auto' }}>
           {children}
         </main>
-        <footer className="border-t border-zinc-800 px-6 py-6 mt-20">
-          <div className="max-w-5xl mx-auto flex items-center justify-between text-xs text-zinc-600">
-            <span>AgentSoul — an open experiment</span>
-            <div className="flex gap-4">
-              <Link href="/terms" className="hover:text-zinc-400">Terms</Link>
-              <Link href="/about" className="hover:text-zinc-400">About</Link>
-              <a href="https://github.com/agentsoul" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400">GitHub</a>
+
+        {/* Footer — specimen catalogue bottom margin */}
+        <footer style={{
+          borderTop: '0.5px solid var(--ink-ghost)',
+          padding: '32px 40px',
+          marginTop: '96px',
+        }}>
+          <div style={{
+            maxWidth: '1200px',
+            margin: '0 auto',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}>
+            <div>
+              <span style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.7rem',
+                color: 'var(--ink-faint)',
+                letterSpacing: '0.05em',
+              }}>
+                AGENTSOUL — an open experiment
+              </span>
+              <div style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '0.65rem',
+                color: 'var(--ink-ghost)',
+                marginTop: '4px',
+                letterSpacing: '0.05em',
+              }}>
+                Turin · March 2026 · ASP-1 v1.0.0-draft
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '24px' }}>
+              {[
+                { href: '/terms', label: 'Terms' },
+                { href: '/about', label: 'About' },
+                { href: '/protocol/asp-1', label: 'ASP-1' },
+                { href: 'https://github.com/gmeda2000/agentsoul', label: 'GitHub', external: true },
+              ].map(({ href, label, external }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  target={external ? '_blank' : undefined}
+                  rel={external ? 'noopener noreferrer' : undefined}
+                  style={{
+                    fontFamily: 'var(--font-ui)',
+                    fontSize: '0.7rem',
+                    letterSpacing: '0.1em',
+                    textTransform: 'uppercase',
+                    color: 'var(--ink-ghost)',
+                    textDecoration: 'none',
+                  }}
+                >
+                  {label}
+                </Link>
+              ))}
             </div>
           </div>
         </footer>
