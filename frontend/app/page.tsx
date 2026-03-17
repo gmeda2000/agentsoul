@@ -3,10 +3,10 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { HeroIllustration } from '@/components/HeroIllustration';
 
 export default function HomePage() {
   const [stats, setStats] = useState<any>(null);
-  const [actIIIHover, setActIIIHover] = useState(false);
 
   useEffect(() => {
     api.getStats().then(setStats).catch(() => null);
@@ -15,48 +15,23 @@ export default function HomePage() {
   return (
     <div>
       {/* ─────────────────────────────────────────────────────────────────────
-          HERO — illustration as watermark behind text
+          HERO — inline SVG illustration as watermark behind text
           ───────────────────────────────────────────────────────────────────── */}
       <section style={{ position: 'relative', overflow: 'hidden', paddingBottom: '80px' }}>
 
-        {/* Watermark illustration */}
+        {/* Inline SVG watermark — vector crisp, interactive amber on hover */}
         <div
           style={{
             position: 'absolute',
-            inset: 0,
+            bottom: 0,
+            left: 0,
+            width: '100%',
             pointerEvents: 'none',
-            overflow: 'hidden',
+            opacity: 0.14,
           }}
         >
-          <img
-            src="/hero-evolution.png"
-            alt=""
-            aria-hidden="true"
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              width: '100%',
-              height: 'auto',
-              objectFit: 'cover',
-              objectPosition: 'center bottom',
-              opacity: actIIIHover ? 0.20 : 0.14,
-              transition: 'opacity 0.5s ease',
-            }}
-          />
+          <HeroIllustration interactive={false} />
         </div>
-
-        {/* Act III hover zone — right 35% brightens the amber soul agent */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0, right: 0,
-            width: '35%', height: '100%',
-            zIndex: 1,
-          }}
-          onMouseEnter={() => setActIIIHover(true)}
-          onMouseLeave={() => setActIIIHover(false)}
-        />
 
         {/* Text content */}
         <div style={{ position: 'relative', zIndex: 2, padding: '80px 40px 0' }}>
@@ -176,6 +151,13 @@ export default function HomePage() {
             ))}
           </div>
         </div>
+      </section>
+
+      {/* ─────────────────────────────────────────────────────────────────────
+          FULL ILLUSTRATION — shown at full opacity below hero text
+          ───────────────────────────────────────────────────────────────────── */}
+      <section style={{ borderTop: '0.5px solid var(--ink-ghost)', borderBottom: '0.5px solid var(--ink-ghost)', overflow: 'hidden' }}>
+        <HeroIllustration interactive={true} />
       </section>
 
       {/* ─────────────────────────────────────────────────────────────────────
