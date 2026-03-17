@@ -31,3 +31,14 @@ async def get_db():
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+        # Idempotent column migrations for existing tables
+        if not _is_sqlite:
+            from sqlalchemy import text
+            for col, typ in [
+                ("review_count", "INTEGER DEFAULT 0"),
+                ("interaction_count_human", "INTEGER DEFAULT 0"),
+                ("interaction_count_agent", "INTEGER DEFAULT 0"),
+            ]:
+                await conn.execute(
+                    text(f"ALTER TABLE agents ADD COLUMN IF NOT EXISTS {col} {typ}")
+                )
