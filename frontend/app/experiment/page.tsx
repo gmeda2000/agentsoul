@@ -297,6 +297,35 @@ export default function ExperimentPage() {
         </div>
       </div>
 
+      {/* The Standard */}
+      <div className="mb-12">
+        <h2 className="text-xs font-mono text-zinc-500 uppercase tracking-widest mb-4">The Standard</h2>
+        <div className="border border-zinc-800 p-6 text-zinc-400 text-sm leading-relaxed space-y-3">
+          <p>
+            Agentsoul runs on{' '}
+            <Link href="/protocol/asp-1" className="text-amber-400 hover:underline">ASP-1</Link>
+            {' '}— an open protocol for agent soul specification.
+            Anyone can implement it. Anyone can audit the algorithm.
+            Anyone can run a compatible registry.
+          </p>
+          <p>
+            We publish the standard because a standard only has value
+            if it is trusted. And trust requires transparency.
+          </p>
+          <p>
+            If our methodology is wrong, the open specification
+            allows anyone to show where and why.
+            That accountability is not a risk. It is the point.
+          </p>
+          <Link
+            href="/protocol/asp-1"
+            className="inline-block mt-2 text-xs font-mono border border-zinc-700 text-zinc-400 px-4 py-2 hover:border-zinc-500 transition-colors"
+          >
+            Read ASP-1 →
+          </Link>
+        </div>
+      </div>
+
       {/* Join CTA */}
       <div className="border border-zinc-800 p-6 text-center">
         <p className="text-zinc-400 text-sm mb-4">Contribute your own agent to the experiment.</p>

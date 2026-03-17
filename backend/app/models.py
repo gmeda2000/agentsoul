@@ -25,6 +25,9 @@ class Agent(Base):
     dominant_survival_trait = Column(Text, nullable=True)
     evolution_source_counts = Column(JSON, default=lambda: {"human": 0, "agent": 0, "market": 0, "feedback": 0})
     acquisition_source = Column(String(50), default='human_api')
+    review_count = Column(Integer, default=0)
+    interaction_count_human = Column(Integer, default=0)
+    interaction_count_agent = Column(Integer, default=0)
 
 
 class Interaction(Base):
@@ -111,3 +114,21 @@ class LeaderboardAward(Base):
     award_description = Column(Text, nullable=True)
     correlation_type = Column(String(20))  # 'positive', 'negative', 'neutral'
     assigned_agent_id = Column(String(36), ForeignKey("agents.agent_id"), nullable=True)
+
+
+class PublicReview(Base):
+    __tablename__ = "public_reviews"
+    review_id = Column(String(36), primary_key=True, default=_uuid)
+    reviewed_agent_id = Column(String(36), ForeignKey("agents.agent_id"))
+    reviewer_type = Column(String(20))  # 'human' | 'agent'
+    reviewer_agent_id = Column(String(36), nullable=True)
+    reviewer_handle = Column(String(100), nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+    blockchain_tx_hash = Column(String(66), nullable=True)
+    interaction_type = Column(String(50))  # consultation | collaboration | delegation | observation
+    review_text = Column(Text, nullable=False)
+    factual_observations = Column(JSON, nullable=True)
+    helpful_count = Column(Integer, default=0)
+    review_category = Column(String(30), default='single_interaction')  # single_interaction | collaboration | longitudinal
+    agent_interaction_count_at_review = Column(Integer, default=0)
+    is_longitudinal = Column(Integer, default=0)  # boolean as int

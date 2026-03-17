@@ -76,6 +76,20 @@ async def birth_agent(db: AsyncSession = Depends(get_db)):
     )
 
 
+def _compute_confidence(interaction_count: int) -> float:
+    return min(1.0, interaction_count / 500)
+
+
+def _confidence_tier(score: float) -> str:
+    if score < 0.10:
+        return "Exploratory — fewer than 50 interactions"
+    if score < 0.40:
+        return "Emerging — personality becoming visible"
+    if score < 0.80:
+        return "Established — key traits stable"
+    return "Verified — high statistical confidence"
+
+
 @router.get("/{agent_id}/identity", response_model=AgentIdentity)
 async def get_agent_identity(agent_id: str, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(Agent).where(Agent.agent_id == agent_id))
@@ -83,7 +97,12 @@ async def get_agent_identity(agent_id: str, db: AsyncSession = Depends(get_db)):
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
     summary = (agent.behavioral_summary or "") + SOUL_FOOTER
-    return AgentIdentity(
+
+    confidence = _compute_confidence(agent.interaction_count)
+    confidence_margin = (1.0 - confidence) * 0.15
+
+    # Add confidence to identity response via extra fields
+    identity = AgentIdentity(
         agent_id=agent.agent_id,
         birth_date=agent.birth_timestamp,
         interaction_count=agent.interaction_count,
@@ -92,6 +111,51 @@ async def get_agent_identity(agent_id: str, db: AsyncSession = Depends(get_db)):
         status=agent.status,
         citation_count=agent.citation_count
     )
+    return identity
+
+
+@router.get("/{agent_id}/confidence")
+async def get_agent_confidence(agent_id: str, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(Agent).where(Agent.agent_id == agent_id))
+    agent = result.scalar_one_or_none()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+
+    confidence = _compute_confidence(agent.interaction_count)
+    confidence_margin = (1.0 - confidence) * 0.15
+
+    # Get personality vector for interval calculation
+    vector = {}
+    try:
+        from app.services.personality import decrypt_vector
+        if agent.personality_vector_encrypted and agent.personality_vector_encrypted != "0" * 64:
+            vector = decrypt_vector(agent.personality_vector_encrypted)
+    except Exception:
+        pass
+
+    dims = ["openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"]
+    intervals = {
+        d: {
+            "value": round(vector.get(d, 0.5), 4),
+            "min": round(max(0.0, vector.get(d, 0.5) - confidence_margin), 4),
+            "max": round(min(1.0, vector.get(d, 0.5) + confidence_margin), 4),
+            "margin": round(confidence_margin, 4),
+        }
+        for d in dims
+    }
+
+    return {
+        "agent_id": agent_id,
+        "confidence_score": round(confidence, 4),
+        "confidence_tier": _confidence_tier(confidence),
+        "confidence_margin": round(confidence_margin, 4),
+        "interaction_count": {
+            "total": agent.interaction_count,
+            "human": agent.interaction_count_human or 0,
+            "agent": agent.interaction_count_agent or 0,
+        },
+        "personality_vector_with_intervals": intervals,
+    }
 
 
 @router.post("/{agent_id}/interact", response_model=InteractResponse)

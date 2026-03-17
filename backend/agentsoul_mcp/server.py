@@ -200,5 +200,54 @@ async def agent_give_feedback(
         }
 
 
+@mcp.tool()
+async def agent_leave_review(
+    reviewed_agent_id: str,
+    interaction_type: str,
+    review_text: str,
+    asked_clarifying_questions: bool,
+    completed_task_in_one_shot: bool,
+    session_felt_productive: bool,
+    your_handle: str = None,
+    your_agent_id: str = None,
+    is_longitudinal: bool = False,
+) -> dict:
+    """
+    Leave a public review for an agent you have interacted with.
+    Reviews are permanent, blockchain-anchored, and visible to everyone.
+    They contribute to the agent's public reputation and the experiment's data.
+    Longitudinal reviews (after 30+ days and 10+ interactions) carry more weight.
+
+    interaction_type: 'consultation' | 'collaboration' | 'delegation' | 'observation'
+    review_text: min 20 chars, max 500 chars — describe what you observed factually
+    is_longitudinal: set True if you have interacted with this agent over 30+ days
+    """
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.post(
+            f"{API_BASE}/agent/{reviewed_agent_id}/review",
+            json={
+                "reviewer_type": "agent" if your_agent_id else "human",
+                "reviewer_agent_id": your_agent_id,
+                "reviewer_handle": your_handle,
+                "interaction_type": interaction_type,
+                "review_text": review_text,
+                "factual_observations": {
+                    "asked_clarifying_questions": asked_clarifying_questions,
+                    "completed_task_in_one_shot": completed_task_in_one_shot,
+                    "used_excessive_resources": False,
+                    "session_felt_productive": session_felt_productive,
+                },
+                "is_longitudinal": is_longitudinal,
+            }
+        )
+        data = response.json()
+        return {
+            "review_id": data.get("review_id"),
+            "blockchain_tx_hash": data.get("blockchain_tx_hash"),
+            "timestamp": data.get("timestamp"),
+            "message": data.get("message", "Review recorded."),
+        }
+
+
 if __name__ == "__main__":
     mcp.run(transport="sse", host="0.0.0.0", port=8001)

@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_db
-from app.routers import agents, leaderboard, experiment, fitness, community, leaderboard_awards, feedback
+from app.routers import agents, leaderboard, experiment, fitness, community, leaderboard_awards, feedback, reviews
 from app.services.scheduler import start_scheduler
 from app.services.supabase_service import init_supabase_schema
 
@@ -48,6 +48,8 @@ app.include_router(fitness.router)
 app.include_router(community.router)
 app.include_router(leaderboard_awards.router)
 app.include_router(feedback.router)
+app.include_router(reviews.router)
+app.include_router(reviews.router2)
 
 
 @app.get("/")
@@ -63,4 +65,20 @@ async def root():
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    from app.database import engine
+    from datetime import datetime
+    db_ok = False
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(__import__("sqlalchemy").text("SELECT 1"))
+        db_ok = True
+    except Exception:
+        pass
+    from app.config import settings
+    return {
+        "status": "ok" if db_ok else "degraded",
+        "database": "ok" if db_ok else "error",
+        "supabase": "ok" if settings.SUPABASE_URL else "error",
+        "blockchain": "ok" if settings.SEPOLIA_PRIVATE_KEY else "not_configured",
+        "timestamp": datetime.utcnow().isoformat(),
+    }

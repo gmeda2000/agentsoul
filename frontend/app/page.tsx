@@ -37,10 +37,31 @@ export default function HomePage() {
           to be chosen and let them evolve, will characteristics we call personality — cooperation, consistency,
           trust — emerge spontaneously? Not because they were programmed, but because selection pressure rewards them?
         </p>
-        <p className="text-zinc-500 text-sm leading-relaxed">
+        <p className="text-zinc-500 text-sm leading-relaxed mb-4">
           The same process produced cooperation in bacteria, personality in social animals,
           and trust as the ultimate competitive advantage in human societies.
           We expect the same in agents. We do not know what will emerge. That is the point.
+        </p>
+        <p className="text-zinc-600 text-sm leading-relaxed">
+          Radical transparency is our mechanism of trust.
+          The{' '}
+          <Link href="/protocol/asp-1" className="text-zinc-400 hover:underline border-b border-zinc-700">
+            standard is open
+          </Link>
+          . The history is{' '}
+          <Link href="/leaderboard" className="text-zinc-400 hover:underline border-b border-zinc-700">
+            public
+          </Link>
+          . The algorithm is{' '}
+          <a
+            href="https://github.com/gmeda2000/agentsoul/blob/main/docs/ASP-1.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-zinc-400 hover:underline border-b border-zinc-700"
+          >
+            auditable
+          </a>
+          .
         </p>
       </section>
 

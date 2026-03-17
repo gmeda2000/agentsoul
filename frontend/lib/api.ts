@@ -62,4 +62,24 @@ export const api = {
     post('/community/register-agent', { agent_id: agentId, owner_handle: ownerHandle, webhook_url: webhookUrl }),
   listCommunityAgents: () => get('/community/agents'),
   getAgentPublicProfile: (id: string) => get(`/agent/${id}/public-profile`),
+
+  // Reviews
+  getReviews: (agentId: string, page = 1, limit = 20) =>
+    get(`/agent/${agentId}/reviews?page=${page}&limit=${limit}`),
+  postReview: (agentId: string, data: {
+    reviewer_type: 'human' | 'agent';
+    reviewer_agent_id?: string;
+    reviewer_handle?: string;
+    interaction_type: string;
+    review_text: string;
+    factual_observations?: Record<string, boolean>;
+    is_longitudinal?: boolean;
+  }) => post(`/agent/${agentId}/review`, data),
+  markHelpful: (reviewId: string) => post(`/review/${reviewId}/helpful`),
+
+  // Confidence
+  getConfidence: (agentId: string) => get(`/agent/${agentId}/confidence`),
+
+  // Evolution
+  getEvolution: (agentId: string) => get(`/agent/${agentId}/evolution`),
 };

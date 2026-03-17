@@ -57,6 +57,42 @@ async def register_birth_on_chain(agent_id: str, seed: bytes, timestamp: str) ->
         return None
 
 
+async def register_review_on_chain(review_id: str, agent_id: str, timestamp: str) -> Optional[str]:
+    """Anchor a public review on Sepolia testnet."""
+    try:
+        from web3 import AsyncWeb3
+        from eth_account import Account
+
+        if not settings.SEPOLIA_PRIVATE_KEY:
+            return None
+
+        w3 = AsyncWeb3(AsyncWeb3.AsyncHTTPProvider(settings.SEPOLIA_RPC_URL))
+        if not await w3.is_connected():
+            return None
+
+        account = Account.from_key(settings.SEPOLIA_PRIVATE_KEY)
+        marker = hashlib.sha256(f"REVIEW:{review_id}:{agent_id}:{timestamp}".encode()).hexdigest()
+        nonce = await w3.eth.get_transaction_count(account.address)
+        gas_price = await w3.eth.gas_price
+
+        tx = {
+            'from': account.address,
+            'to': account.address,
+            'value': 0,
+            'gas': 50000,
+            'gasPrice': gas_price,
+            'nonce': nonce,
+            'chainId': 11155111,
+            'data': ('0x' + marker.encode().hex())
+        }
+        signed = Account.sign_transaction(tx, settings.SEPOLIA_PRIVATE_KEY)
+        tx_hash = await w3.eth.send_raw_transaction(signed.raw_transaction)
+        return tx_hash.hex()
+    except Exception as e:
+        logger.error(f"Review blockchain anchor failed: {e}")
+        return None
+
+
 async def register_death_on_chain(agent_id: str, tx_hash_birth: Optional[str]) -> Optional[str]:
     """Register agent death on Sepolia testnet."""
     try:
